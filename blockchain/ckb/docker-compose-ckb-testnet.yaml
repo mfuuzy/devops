@@ -1,0 +1,20 @@
+version: '3'
+services:
+  ckb-node-testnet:
+    container_name: ckb-node-testnet
+    command: init --chain testnet
+    entrypoint: ["/bin/bash","-c"]
+    command: run
+    image: nervos/ckb:v0.114.0
+    ports:
+    - 8114:8114
+    volumes:
+    - /etc/localtime:/etc/localtime
+    - ./data-testnet:/var/lib/ckb
+    command:
+    - |
+      set -ex
+      cd /var/lib/ckb
+      ckb init --chain testnet || true
+      ckb migrate --force
+      ckb run

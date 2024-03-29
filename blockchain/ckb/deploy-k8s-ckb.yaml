@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mainnet-ckb
+  namespace: prod
+spec:
+  selector:
+    matchLabels:
+      app: mainnet-ckb
+      logging: "true"
+  serviceName: "ckb"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mainnet-ckb
+        logging: "true"
+    spec:
+      securityContext:
+        runAsUser: 0
+      containers:
+      - name: mainnet-ckb
+        image: "nervos/ckb:v0.114.0"
+        command:
+        - bash
+        - "-c"
+        - |
+          set -ex
+          cd /var/lib/ckb
+          ckb init --chain mainnet || true
+          ckb migrate --force
+          ckb run
+        ports:
+          - name: rpc
+            containerPort: 8114
+            protocol: "TCP"
+        volumeMounts:
+          - name: ckb-data
+            mountPath: /var/lib/ckb
+  volumeClaimTemplates:
+  - metadata:
+      name: ckb-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 300Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ckb
+  namespace: prod
+spec:
+  ports:
+    - port: 8114
+      protocol: TCP
+      targetPort: 8114
+  selector:
+    app: mainnet-ckb
+  type: ClusterIP
